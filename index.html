@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>daily-games — 毎日遊べるミニゲーム集</title>
+<meta name="description" content="毎日1問のデイリーブラウザゲーム集。" />
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    background: #14161c;
+    color: #e8eaf0;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+  }
+  .wrap { max-width: 480px; padding: 32px 20px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: #9aa1b0; margin: 0 0 28px; font-size: .95rem; }
+  a.game {
+    display: block;
+    background: #1d2029;
+    border: 1px solid #2e3340;
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s;
+  }
+  a.game:hover { border-color: #4ade80; }
+  .game h2 { margin: 0 0 6px; font-size: 1.15rem; }
+  .game p { margin: 0; color: #9aa1b0; font-size: .9rem; }
+  .badge { color: #4ade80; font-size: .8rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>daily-games</h1>
+  <p class="sub">毎日1問、サクッと遊べるブラウザゲーム集</p>
+  <a class="game" href="./chart-guess/">
+    <h2>チャート当て <span class="badge">公開中</span></h2>
+    <p>株価チャートの形だけで、どの日本企業か当てるデイリークイズ。チャンスは6回。</p>
+  </a>
+</div>
+</body>
+</html>
