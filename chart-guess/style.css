@@ -11,6 +11,10 @@
   --yellow-soft: #fff8e1;
   --red: #e74c3c;
   --red-soft: #fdecea;
+  --up: #d32f2f;
+  --up-soft: #ffebee;
+  --down: #1565c0;
+  --down-soft: #e3f2fd;
   --blue: #4a90d9;
   --radius: 12px;
   --font: "M PLUS Rounded 1c", "Hiragino Sans", "Yu Gothic", sans-serif;
@@ -130,10 +134,10 @@ body {
   border-radius: 6px;
   padding: 0.15em 0.55em;
 }
-.chart-badge.up { background: var(--green-soft); color: var(--green-dark); }
-.chart-badge.down { background: var(--red-soft); color: var(--red); }
+.chart-badge.up { background: var(--up-soft); color: var(--up); }
+.chart-badge.down { background: var(--down-soft); color: var(--down); }
 
-#chart { width: 100%; height: auto; display: block; }
+#chart { width: 100%; height: auto; display: block; background: #fafafa; border-radius: 8px; }
 
 /* ---- Guess grid (Wordle-style) ---- */
 .guess-grid {
@@ -309,8 +313,8 @@ body {
 .result-answer { font-weight: 700; text-align: center; }
 .result-answer strong { color: var(--green-dark); }
 .result-change { font-weight: 800; font-size: 0.85em; }
-.result-change.up { color: var(--green-dark); }
-.result-change.down { color: var(--red); }
+.result-change.up { color: var(--up); }
+.result-change.down { color: var(--down); }
 
 .result-desc {
   color: var(--ink-dim);

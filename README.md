@@ -17,10 +17,15 @@
 
 ## データ更新
 
-チャート当ての株価データは Yahoo Finance から取得する。
+チャート当ての株価データは Yahoo Finance から取得する。銘柄マスタは `scripts/stocks-catalog.mjs`、問題生成は `scripts/build-puzzles.mjs`、データ取得は `scripts/fetch-data.mjs`。
 
 ```bash
+# 銘柄を追加した場合
+node scripts/build-puzzles.mjs
+node scripts/fetch-data.mjs
+
+# データだけ更新する場合
 node scripts/fetch-data.mjs
 ```
 
-`chart-guess/series.js` が再生成される。月1回程度の更新を推奨。
+毎月2日 03:00 JST に GitHub Actions が自動更新する（`.github/workflows/update-stock-data.yml`）。

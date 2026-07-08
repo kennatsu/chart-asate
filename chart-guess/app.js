@@ -89,34 +89,71 @@
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
   }
 
-  // ---- チャート描画 ----
+  // ---- チャート描画（SBI/楽天証券風：軸ラベル・100基準線・日本式配色） ----
   function drawChart(values) {
     const svg = document.getElementById("chart");
-    const W = 640, H = 300, PAD = 28;
-    const min = Math.min(...values), max = Math.max(...values);
-    const range = max - min || 1;
-    const x = (i) => PAD + (i / (values.length - 1)) * (W - PAD * 2);
-    const y = (v) => H - PAD - ((v - min) / range) * (H - PAD * 2);
+    const W = 640, H = 380;
+    const PL = 56, PR = 48, PT = 14, PB = 36;
+    const cW = W - PL - PR;
+    const cH = H - PT - PB;
+
+    let yMin = Math.min(...values, 100);
+    let yMax = Math.max(...values, 100);
+    const pad = (yMax - yMin) * 0.1 || 8;
+    yMin = Math.floor((yMin - pad) / 5) * 5;
+    yMax = Math.ceil((yMax + pad) / 5) * 5;
+    const yRange = yMax - yMin || 1;
 
     const up = values[values.length - 1] >= values[0];
-    const color = up ? "#6aaa64" : "#e74c3c";
+    const color = up ? "#d32f2f" : "#1565c0";
+
+    const x = (i) => PL + (i / (values.length - 1)) * cW;
+    const y = (v) => PT + cH - ((v - yMin) / yRange) * cH;
     const points = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
 
     let grid = "";
-    for (let g = 0; g <= 4; g++) {
-      const gy = PAD + (g / 4) * (H - PAD * 2);
-      grid += `<line x1="${PAD}" y1="${gy}" x2="${W - PAD}" y2="${gy}" stroke="#ececec" stroke-width="1"/>`;
+    let yLabels = "";
+    for (let i = 0; i <= 4; i++) {
+      const val = yMin + (i / 4) * yRange;
+      const gy = y(val);
+      grid += `<line x1="${PL}" y1="${gy}" x2="${PL + cW}" y2="${gy}" stroke="#e8e8e8" stroke-width="1"/>`;
+      yLabels += `<text x="${PL - 8}" y="${gy + 4}" text-anchor="end" fill="#999" font-size="11" font-family="sans-serif">${Math.round(val)}</text>`;
     }
 
-    const areaPoints = `${PAD},${H - PAD} ${points} ${W - PAD},${H - PAD}`;
+    let baseline = "";
+    if (100 >= yMin && 100 <= yMax) {
+      const by = y(100);
+      baseline = `<line x1="${PL}" y1="${by}" x2="${PL + cW}" y2="${by}" stroke="#bbb" stroke-width="1" stroke-dasharray="5,4"/>`;
+      yLabels += `<text x="${PL + cW + 6}" y="${by + 4}" fill="#999" font-size="10" font-family="sans-serif">100</text>`;
+    }
+
+    let xLabels = "";
+    if (typeof MONTH_LABELS !== "undefined") {
+      const indices = [0, 6, 12, 18, values.length - 1];
+      indices.forEach((i) => {
+        if (i >= MONTH_LABELS.length) return;
+        const lbl = MONTH_LABELS[i].slice(2).replace("-", "/");
+        xLabels += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" fill="#999" font-size="10" font-family="sans-serif">${lbl}</text>`;
+      });
+    }
+
+    const border = `<rect x="${PL}" y="${PT}" width="${cW}" height="${cH}" fill="#fafafa" stroke="#ddd" stroke-width="1" rx="2"/>`;
+    const areaPoints = `${PL},${PT + cH} ${points} ${PL + cW},${PT + cH}`;
+    const lastVal = values[values.length - 1];
     const lastX = x(values.length - 1);
-    const lastY = y(values[values.length - 1]);
+    const lastY = y(lastVal);
 
     svg.innerHTML = `
+      ${border}
       ${grid}
-      <polygon points="${areaPoints}" fill="${color}" opacity="0.12"/>
-      <polyline points="${points}" fill="none" stroke="${color}" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <circle cx="${lastX}" cy="${lastY}" r="6" fill="${color}" stroke="#fff" stroke-width="2"/>
+      ${baseline}
+      <polygon points="${areaPoints}" fill="${color}" opacity="0.06"/>
+      <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${x(0)}" cy="${y(values[0])}" r="3.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="${lastX}" cy="${lastY}" r="5" fill="${color}" stroke="#fff" stroke-width="2"/>
+      <text x="${lastX}" y="${lastY - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold" font-family="sans-serif">${lastVal.toFixed(1)}</text>
+      ${yLabels}
+      ${xLabels}
     `;
   }
 
