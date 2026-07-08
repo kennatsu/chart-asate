@@ -10,7 +10,7 @@ import { formatChartHint } from "./analyze-chart.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const input = JSON.parse(readFileSync(join(root, "scripts/hints-input.json"), "utf8"));
-const legacy = Object.fromEntries(HINT_DATA.map(([t, earn, moat, driver, clue]) => [t, { earn, moat, clue }]));
+const legacy = Object.fromEntries(HINT_DATA.map(([t, earn, moat, driver, clue]) => [t, { earn, moat, driver, clue }]));
 
 const hints = {};
 for (const stock of input) {
@@ -20,8 +20,8 @@ for (const stock of input) {
   const events = stock.moves.map((move) => ({
     index: move.index,
     type: move.type,
-    explain: explainMove(stock, move),
-    hint: formatChartHint(move, explainMove(stock, move)),
+    explain: explainMove(stock, move, leg.driver),
+    hint: formatChartHint(move, explainMove(stock, move, leg.driver)),
   }));
 
   hints[stock.ticker] = {

@@ -33,8 +33,9 @@ node scripts/fetch-data.mjs
 ### ヒントの再生成（Fable 5 推奨）
 
 1. `node scripts/export-for-hints.mjs` — チャート変動ポイントを抽出
-2. Fable 5 に `scripts/hints-input.json` を渡して `hints-batch-*.json` を生成
-3. `node scripts/merge-fable-hints.mjs` — マージ
-4. `node scripts/build-puzzles.mjs` — puzzles.js 更新
+2. `node scripts/generate-fable-prompt.mjs 1` — バッチ1用プロンプト（1〜4）
+3. Fable 5 に `scripts/fable-prompt-batch-N.txt` を貼り付け → `hints-batch-N.json` として保存
+4. `node scripts/merge-fable-hints.mjs` — マージ
+5. `node scripts/build-puzzles.mjs` — puzzles.js 更新
 
-手動（Fable なし）の場合は `node scripts/build-smart-hints.mjs` で sector ベースの解説を生成。
+手動（Fable なし）の場合は `node scripts/build-smart-hints.mjs` で driver + マクロ文脈ベースの解説を生成。
