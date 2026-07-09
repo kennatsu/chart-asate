@@ -7,6 +7,17 @@ import { dirname, join } from "node:path";
 import { STOCKS } from "./stocks-catalog.mjs";
 import { HINTS } from "./stock-hints.mjs";
 
+function parseMcapYen(mcap) {
+  const m = mcap.replace(/約|・.+$/g, "").match(/([\d.]+)\s*(兆|億)/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  return m[2] === "兆" ? n * 1e12 : n * 1e8;
+}
+
+function sectorRoot(sector) {
+  return sector.split(/[／/（(]/)[0].trim();
+}
+
 function buildHints(s) {
   const h = HINTS[s.ticker];
   if (!h) throw new Error(`Missing hints for ${s.ticker} (${s.answer})`);
@@ -51,6 +62,10 @@ ${hintsStr}
   }`;
 }
 
+const stockIndexEntries = STOCKS.map((s) =>
+  `  ${JSON.stringify(s.answer)}: { ticker: ${JSON.stringify(s.ticker)}, sector: ${JSON.stringify(s.sector)}, sectorRoot: ${JSON.stringify(sectorRoot(s.sector))}, mcapYen: ${parseMcapYen(s.mcap)}, mcapLabel: ${JSON.stringify(s.mcap.split("・")[0])} }`
+).join(",\n");
+
 const companyList = STOCKS.map((s) => JSON.stringify(s.answer)).join(", ");
 const puzzles = STOCKS.map((s, i) => buildPuzzle(s, i + 1)).join(",\n");
 
@@ -63,6 +78,10 @@ const COMPANY_LIST = [
   ${companyList.split(", ").join(",\n  ")},
 ];
 
+const STOCK_INDEX = {
+${stockIndexEntries}
+};
+
 const PUZZLES = [
 ${puzzles}
 ];
@@ -70,4 +89,4 @@ ${puzzles}
 
 const dest = join(dirname(fileURLToPath(import.meta.url)), "..", "chart-guess", "puzzles.js");
 writeFileSync(dest, out);
-console.log(`wrote ${dest} (${STOCKS.length} puzzles, 6 hints with 2 chart insights each)`);
+console.log(`wrote ${dest} (${STOCKS.length} puzzles, STOCK_INDEX for guess feedback)`);

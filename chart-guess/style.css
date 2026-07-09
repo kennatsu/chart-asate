@@ -169,7 +169,7 @@ body {
 .hint.revealed .hint-tag.chart { background: #bbdefb; color: #0d47a1; }
 .hint-locked { font-size: 0.78rem; color: var(--ink-dim); }
 
-/* ---- Guess grid (Wordle-style) ---- */
+/* ---- Guess grid (Wordle 6行 + Tradle フィードバック) ---- */
 .guess-grid {
   display: flex;
   flex-direction: column;
@@ -178,14 +178,14 @@ body {
 
 .guess-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   border: 2px solid var(--line);
   border-radius: 8px;
-  padding: 0.5rem 0.7rem;
-  font-size: 0.9rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  min-height: 2.6rem;
+  min-height: 2.5rem;
   animation: slide-in 0.2s ease-out;
 }
 .guess-row.empty {
@@ -193,6 +193,12 @@ body {
   color: var(--ink-dim);
   font-weight: 500;
   background: transparent;
+  align-items: center;
+  min-height: 2.2rem;
+}
+.guess-row.empty.active {
+  border-color: var(--green);
+  background: var(--green-soft);
 }
 .guess-row.wrong {
   background: var(--surface);
@@ -202,6 +208,7 @@ body {
   background: var(--green);
   border-color: var(--green);
   color: #fff;
+  align-items: center;
 }
 
 .guess-dot {
@@ -209,16 +216,52 @@ body {
   height: 1.1rem;
   border-radius: 3px;
   flex-shrink: 0;
+  margin-top: 0.15rem;
 }
+.guess-row.correct .guess-dot { margin-top: 0; }
 .guess-dot.wrong { background: var(--ink-dim); }
 .guess-dot.correct { background: #fff; }
+.guess-dot.empty-dot {
+  background: transparent;
+  border: 2px dashed var(--line);
+  border-radius: 3px;
+}
+.guess-row.empty.active .guess-dot.empty-dot {
+  border-color: var(--green);
+  background: rgba(106, 170, 100, 0.2);
+}
+
+.guess-body { flex: 1; min-width: 0; }
 
 .guess-text {
-  flex: 1;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.guess-placeholder {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+
+.guess-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.fb-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15em 0.45em;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+.fb-pill.match { background: var(--green-soft); color: var(--green-dark); }
+.fb-pill.partial { background: var(--yellow-soft); color: #b8860b; }
+.fb-pill.miss { background: #eee; color: var(--ink-dim); }
 
 @keyframes slide-in {
   0% { transform: translateY(-6px); opacity: 0; }
@@ -264,11 +307,18 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* ---- Input ---- */
+/* ---- Input + オートコンプリート ---- */
+.guess-area { position: relative; }
+
 #guess-form { display: flex; gap: 0.5rem; }
 
-#guess-input {
+.input-wrap {
   flex: 1;
+  position: relative;
+}
+
+#guess-input {
+  width: 100%;
   background: var(--surface);
   border: 2px solid var(--line);
   border-radius: 8px;
@@ -281,6 +331,76 @@ body {
 #guess-input:focus { outline: 2px solid var(--green); border-color: var(--green); }
 #guess-input:disabled { opacity: 0.5; }
 #guess-input::placeholder { color: var(--ink-dim); font-weight: 500; }
+
+.ac-list {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.ac-list.open { display: block; }
+
+.ac-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: var(--font);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ac-item:hover, .ac-item.active {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+#guess-form.shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.toast {
+  position: fixed;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--ink);
+  color: #fff;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  z-index: 20;
+  opacity: 0;
+  transition: transform 0.25s, opacity 0.25s;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
 
 .btn-primary {
   background: var(--green);
@@ -395,6 +515,41 @@ body {
 .stat-num { font-size: 1.35rem; font-weight: 900; }
 .stat-label { font-size: 0.62rem; color: var(--ink-dim); font-weight: 700; }
 
+.dist-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ink-dim);
+  text-align: center;
+  margin-top: 0.25rem;
+}
+
+.dist-chart { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.dist-row {
+  display: grid;
+  grid-template-columns: 1.2rem 1fr 1.5rem;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.dist-label { color: var(--ink-dim); text-align: center; }
+.dist-bar-wrap {
+  height: 1.1rem;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.dist-bar {
+  height: 100%;
+  background: var(--green);
+  border-radius: 4px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+.dist-bar.fail-bar { background: var(--ink-dim); }
+.dist-count { text-align: right; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+
 /* ---- Footer ---- */
 .footer {
   border-top: 2px solid var(--line);
@@ -408,5 +563,5 @@ body {
 
 @media (max-width: 480px) {
   #guess-form { flex-direction: column; }
-  .btn-primary { width: 100%; }
+  .input-wrap, .btn-primary { width: 100%; }
 }

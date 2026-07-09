@@ -35,24 +35,29 @@
     <div class="chart-story" id="chart-story" aria-label="チャート解説"></div>
   </section>
 
-  <section class="guess-grid" id="guess-grid" aria-label="回答履歴"></section>
-
-  <section class="hints" id="hints"></section>
-
   <section class="guess-area">
     <form id="guess-form" autocomplete="off">
-      <input
-        type="text"
-        id="guess-input"
-        list="companies"
-        placeholder="企業名を入力"
-        aria-label="企業名を入力"
-      />
-      <datalist id="companies"></datalist>
+      <div class="input-wrap">
+        <input
+          type="text"
+          id="guess-input"
+          placeholder="企業名を入力"
+          aria-label="企業名を入力"
+          aria-autocomplete="list"
+          aria-controls="ac-list"
+        />
+        <ul class="ac-list" id="ac-list" role="listbox"></ul>
+      </div>
       <button type="submit" class="btn-primary" id="btn-submit">回答</button>
     </form>
   </section>
+
+  <section class="guess-grid" id="guess-grid" aria-label="回答履歴"></section>
+
+  <section class="hints" id="hints"></section>
 </main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- 結果モーダル -->
 <div class="modal-backdrop hidden" id="modal-result">
@@ -76,8 +81,8 @@
     <ul class="help-list">
       <li>株価チャートの<strong>形だけ</strong>を見て、どの日本企業か当てよう。</li>
       <li>チャンスは<strong>6回</strong>。外すたびにヒントが1つ開く。</li>
+      <li>外したら <strong>業界・規模・株価の近さ</strong> がヒントになる（Tradle風）。</li>
       <li>ヒントは 業界 → 稼ぎ方 → 強み → <strong>チャート解説×2</strong> → 関連ワード の順。</li>
-      <li>チャート解説が開くと、グラフ上のポイントにもマーカーが付くよ。</li>
       <li>証券コードは出ない。ビジネスの理解が近道！</li>
     </ul>
   </div>
@@ -94,6 +99,8 @@
       <div class="stat"><span class="stat-num" id="stat-streak">0</span><span class="stat-label">連続</span></div>
       <div class="stat"><span class="stat-num" id="stat-maxstreak">0</span><span class="stat-label">最長</span></div>
     </div>
+    <h3 class="dist-title">推測回数の分布</h3>
+    <div class="dist-chart" id="stat-distribution"></div>
   </div>
 </div>
 

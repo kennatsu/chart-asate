@@ -2,9 +2,10 @@
   const MAX_GUESSES = 6;
   const STORAGE_KEY = "chart-guess-state";
   const STATS_KEY = "chart-guess-stats";
-  const EPOCH = "2026-07-01"; // 第1問の日付（JST）
+  const HELP_KEY = "chart-guess-seen-help";
+  const EPOCH = "2026-07-01";
 
-  // ---- JST 日付ユーティリティ ----
+  // ---- JST 日付 ----
   function jstDateStr(d = new Date()) {
     return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(d);
   }
@@ -28,29 +29,94 @@
     return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
 
-  // ---- 今日の問題 ----
+  // ---- 問題 ----
   const dayNumber = jstDayNumber();
   const puzzle = PUZZLES[dayNumber % PUZZLES.length];
   const series = SERIES[puzzle.ticker];
   const puzzleNo = dayNumber + 1;
+  const targetMeta = STOCK_INDEX[puzzle.answer];
+  const targetChangePct = changePctFor(puzzle.ticker);
 
-  const changePct = (series[series.length - 1] / series[0] - 1) * 100;
-  const changeText = `${changePct >= 0 ? "+" : ""}${changePct.toFixed(1)}%`;
+  const changeText = `${targetChangePct >= 0 ? "+" : ""}${targetChangePct.toFixed(1)}%`;
 
   document.getElementById("puzzle-label").textContent = `#${puzzleNo}`;
   document.getElementById("data-asof").textContent = DATA_ASOF;
 
   const changeBadge = document.getElementById("chart-change");
   changeBadge.textContent = changeText;
-  changeBadge.classList.add(changePct >= 0 ? "up" : "down");
+  changeBadge.classList.add(targetChangePct >= 0 ? "up" : "down");
 
-  // ---- カウントダウン ----
   const countdownEl = document.getElementById("countdown");
   function tickCountdown() {
     countdownEl.textContent = "次の問題まで " + formatCountdown(msUntilNextJSTMidnight());
   }
   tickCountdown();
   setInterval(tickCountdown, 1000);
+
+  // ---- 企業名ルックアップ ----
+  const nameLookup = new Map();
+  for (const name of COMPANY_LIST) {
+    nameLookup.set(normalize(name), name);
+  }
+  for (const p of PUZZLES) {
+    nameLookup.set(normalize(p.answer), p.answer);
+    for (const a of p.aliases) nameLookup.set(normalize(a), p.answer);
+  }
+
+  function normalize(s) {
+    return s.trim().toLowerCase().replace(/\s+/g, "").replace(/[・･]/g, "");
+  }
+
+  function resolveCompany(input) {
+    return nameLookup.get(normalize(input)) || null;
+  }
+
+  function changePctFor(ticker) {
+    const s = SERIES[ticker];
+    if (!s?.length) return 0;
+    return (s[s.length - 1] / s[0] - 1) * 100;
+  }
+
+  function isCorrect(guess) {
+    return resolveCompany(guess) === puzzle.answer;
+  }
+
+  // ---- Tradle 式フィードバック ----
+  function computeFeedback(guessName) {
+    const guess = STOCK_INDEX[guessName];
+    if (!guess || !targetMeta) return null;
+
+    const guessChange = changePctFor(guess.ticker);
+    const sameDir = (guessChange >= 0) === (targetChangePct >= 0);
+    const changeDiff = Math.abs(guessChange - targetChangePct);
+
+    let proximity = 0;
+    if (guess.sector === targetMeta.sector) proximity += 40;
+    else if (guess.sectorRoot === targetMeta.sectorRoot) proximity += 22;
+
+    const mcapRatio = Math.min(guess.mcapYen, targetMeta.mcapYen) / Math.max(guess.mcapYen, targetMeta.mcapYen || 1);
+    proximity += Math.round(mcapRatio * 30);
+
+    if (sameDir) proximity += 12;
+    proximity += Math.max(0, 18 - Math.floor(changeDiff / 8));
+    proximity = Math.min(100, proximity);
+
+    let sectorFb;
+    if (guess.sector === targetMeta.sector) sectorFb = { cls: "match", text: "業界 ○" };
+    else if (guess.sectorRoot === targetMeta.sectorRoot) sectorFb = { cls: "partial", text: "業界 △" };
+    else sectorFb = { cls: "miss", text: "業界 ✗" };
+
+    let sizeFb;
+    if (mcapRatio >= 0.55) sizeFb = { cls: "match", text: "規模 ≈" };
+    else if (guess.mcapYen > targetMeta.mcapYen * 1.4) sizeFb = { cls: "miss", text: "規模 ↓小" };
+    else sizeFb = { cls: "miss", text: "規模 ↑大" };
+
+    const chartCls = sameDir ? (changeDiff <= 25 ? "match" : "partial") : "miss";
+    const chartIcon = sameDir ? "↗" : "↘";
+    const chartFb = { cls: chartCls, text: `株価 ${chartIcon}${proximity}%` };
+
+    return { proximity, pills: [sectorFb, sizeFb, chartFb] };
+  }
 
   // ---- 状態 ----
   const defaultState = { day: dayNumber, guesses: [], done: false, won: false };
@@ -68,11 +134,19 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
+  function defaultStats() {
+    return {
+      played: 0, won: 0, streak: 0, maxStreak: 0,
+      distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, fail: 0 },
+    };
+  }
+
   function loadStats() {
     try {
-      return JSON.parse(localStorage.getItem(STATS_KEY)) || { played: 0, won: 0, streak: 0, maxStreak: 0 };
+      const s = JSON.parse(localStorage.getItem(STATS_KEY));
+      return { ...defaultStats(), ...s, distribution: { ...defaultStats().distribution, ...s?.distribution } };
     } catch (_) {
-      return { played: 0, won: 0, streak: 0, maxStreak: 0 };
+      return defaultStats();
     }
   }
 
@@ -83,13 +157,15 @@
       stats.won += 1;
       stats.streak += 1;
       stats.maxStreak = Math.max(stats.maxStreak, stats.streak);
+      const n = state.guesses.length;
+      if (n >= 1 && n <= 6) stats.distribution[n] = (stats.distribution[n] || 0) + 1;
     } else {
       stats.streak = 0;
+      stats.distribution.fail = (stats.distribution.fail || 0) + 1;
     }
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
   }
 
-  // ---- チャート上に表示するマーカー（解説ヒントが開いた分だけ） ----
   function getVisibleChartMarkers() {
     const revealCount = state.done ? puzzle.hints.length : state.guesses.length;
     return puzzle.hints
@@ -97,7 +173,7 @@
       .filter((h) => h.tag === "チャート" && h.index != null);
   }
 
-  // ---- チャート描画（SBI/楽天証券風 + 変動ポイントマーカー） ----
+  // ---- チャート描画 ----
   function drawChart(values, markers = []) {
     const svg = document.getElementById("chart");
     const W = 640, H = 380;
@@ -137,8 +213,7 @@
 
     let xLabels = "";
     if (typeof MONTH_LABELS !== "undefined") {
-      const indices = [0, 6, 12, 18, values.length - 1];
-      indices.forEach((i) => {
+      [0, 6, 12, 18, values.length - 1].forEach((i) => {
         if (i >= MONTH_LABELS.length) return;
         const lbl = MONTH_LABELS[i].slice(2).replace("-", "/");
         xLabels += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" fill="#999" font-size="10" font-family="sans-serif">${lbl}</text>`;
@@ -167,17 +242,13 @@
     });
 
     svg.innerHTML = `
-      ${border}
-      ${grid}
-      ${baseline}
+      ${border}${grid}${baseline}
       <polygon points="${areaPoints}" fill="${color}" opacity="0.06"/>
       <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
       <circle cx="${x(0)}" cy="${y(values[0])}" r="3.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>
       <circle cx="${lastX}" cy="${lastY}" r="5" fill="${color}" stroke="#fff" stroke-width="2"/>
       <text x="${lastX}" y="${lastY - 10}" text-anchor="middle" fill="${color}" font-size="11" font-weight="bold" font-family="sans-serif">${lastVal.toFixed(1)}</text>
-      ${eventMarkers}
-      ${yLabels}
-      ${xLabels}
+      ${eventMarkers}${yLabels}${xLabels}
     `;
   }
 
@@ -197,27 +268,39 @@
     }).join("");
   }
 
-  // ---- 回答グリッド（Wordle風） ----
+  // ---- 回答グリッド（Wordle 6行 + Tradle フィードバック） ----
   function renderGuessGrid() {
     const container = document.getElementById("guess-grid");
     container.innerHTML = "";
     for (let i = 0; i < MAX_GUESSES; i++) {
       const row = document.createElement("div");
       if (i < state.guesses.length) {
-        const correct = isCorrect(state.guesses[i]);
+        const guessRaw = state.guesses[i];
+        const canonical = resolveCompany(guessRaw) || guessRaw;
+        const correct = isCorrect(guessRaw);
         row.className = "guess-row " + (correct ? "correct" : "wrong");
-        row.innerHTML = `<span class="guess-dot ${correct ? "correct" : "wrong"}"></span><span class="guess-text">${escapeHtml(state.guesses[i])}</span>`;
-      } else if (!state.done) {
-        row.className = "guess-row empty";
-        row.textContent = i === state.guesses.length ? "ここに回答が入る" : "";
+        if (correct) {
+          row.innerHTML = `<span class="guess-dot correct"></span><div class="guess-body"><span class="guess-text">${escapeHtml(canonical)}</span></div>`;
+        } else {
+          const fb = computeFeedback(canonical);
+          const pills = fb
+            ? fb.pills.map((p) => `<span class="fb-pill ${p.cls}">${escapeHtml(p.text)}</span>`).join("")
+            : "";
+          row.innerHTML = `
+            <span class="guess-dot wrong"></span>
+            <div class="guess-body">
+              <span class="guess-text">${escapeHtml(canonical)}</span>
+              ${pills ? `<div class="guess-feedback">${pills}</div>` : ""}
+            </div>`;
+        }
       } else {
-        continue;
+        row.className = "guess-row empty" + (i === state.guesses.length && !state.done ? " active" : "");
+        row.innerHTML = `<span class="guess-dot empty-dot"></span><span class="guess-placeholder">${i === state.guesses.length && !state.done ? "次の回答" : ""}</span>`;
       }
       container.appendChild(row);
     }
   }
 
-  // ---- ヒント ----
   function renderHints() {
     const container = document.getElementById("hints");
     container.innerHTML = "";
@@ -232,23 +315,15 @@
     });
   }
 
-  // ---- 正誤判定 ----
-  function normalize(s) {
-    return s.trim().toLowerCase().replace(/\s+/g, "").replace(/[・･]/g, "");
-  }
-
-  function isCorrect(guess) {
-    const n = normalize(guess);
-    if (!n) return false;
-    if (n === normalize(puzzle.answer)) return true;
-    return puzzle.aliases.some((a) => normalize(a) === n);
-  }
-
   // ---- シェア ----
   function buildShareText() {
-    const rows = state.guesses.map((g) => (isCorrect(g) ? "🟩" : "⬜")).join("");
+    const guessEmojis = state.guesses.map((g) => (isCorrect(g) ? "🟩" : "⬜")).join("");
+    const hintEmojis = puzzle.hints.map((_, i) => {
+      const revealed = state.done || i < state.guesses.length;
+      return revealed ? "💡" : "🔒";
+    }).join("");
     const score = state.won ? `${state.guesses.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`;
-    return `チャート当て #${puzzleNo} ${score}\n${rows}\n${location.href}`;
+    return `チャート当て #${puzzleNo} ${score}\n${guessEmojis}\n${hintEmojis}\n${location.href}`;
   }
 
   // ---- モーダル ----
@@ -259,7 +334,7 @@
     document.getElementById("result-answer").textContent = puzzle.answer;
     const change = document.getElementById("result-change");
     change.textContent = `（${changeText}）`;
-    change.className = "result-change " + (changePct >= 0 ? "up" : "down");
+    change.className = "result-change " + (targetChangePct >= 0 ? "up" : "down");
     document.getElementById("result-desc").textContent = puzzle.desc;
     document.getElementById("share-preview").textContent = buildShareText();
     openModal("modal-result");
@@ -271,6 +346,14 @@
     document.getElementById("stat-winrate").textContent = s.played ? Math.round((s.won / s.played) * 100) + "%" : "0%";
     document.getElementById("stat-streak").textContent = s.streak;
     document.getElementById("stat-maxstreak").textContent = s.maxStreak;
+
+    const distEl = document.getElementById("stat-distribution");
+    const max = Math.max(1, ...[1, 2, 3, 4, 5, 6, "fail"].map((k) => s.distribution[k] || 0));
+    distEl.innerHTML = [1, 2, 3, 4, 5, 6].map((n) => {
+      const count = s.distribution[n] || 0;
+      const pct = Math.round((count / max) * 100);
+      return `<div class="dist-row"><span class="dist-label">${n}</span><div class="dist-bar-wrap"><div class="dist-bar" style="width:${pct}%"></div></div><span class="dist-count">${count}</span></div>`;
+    }).join("") + `<div class="dist-row fail"><span class="dist-label">X</span><div class="dist-bar-wrap"><div class="dist-bar fail-bar" style="width:${Math.round(((s.distribution.fail || 0) / max) * 100)}%"></div></div><span class="dist-count">${s.distribution.fail || 0}</span></div>`;
     openModal("modal-stats");
   }
 
@@ -287,29 +370,111 @@
   document.getElementById("btn-help").addEventListener("click", () => openModal("modal-help"));
   document.getElementById("btn-stats").addEventListener("click", showStats);
 
-  // ---- 入力 ----
+  // ---- トースト ----
+  function showToast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("visible");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => el.classList.remove("visible"), 2200);
+  }
+
+  function shakeInput() {
+    const form = document.getElementById("guess-form");
+    form.classList.remove("shake");
+    void form.offsetWidth;
+    form.classList.add("shake");
+  }
+
+  // ---- オートコンプリート ----
   const form = document.getElementById("guess-form");
   const input = document.getElementById("guess-input");
-  const datalist = document.getElementById("companies");
+  const acList = document.getElementById("ac-list");
+  let acIndex = -1;
 
-  COMPANY_LIST.forEach((name) => {
-    const opt = document.createElement("option");
-    opt.value = name;
-    datalist.appendChild(opt);
+  function filterCompanies(q) {
+    const n = normalize(q);
+    if (!n) return [];
+    return COMPANY_LIST.filter((name) => normalize(name).includes(n)).slice(0, 8);
+  }
+
+  function renderAc(items) {
+    acList.innerHTML = "";
+    if (!items.length) {
+      acList.classList.remove("open");
+      return;
+    }
+    items.forEach((name, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ac-item" + (i === acIndex ? " active" : "");
+      btn.textContent = name;
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        input.value = name;
+        acList.classList.remove("open");
+        input.focus();
+      });
+      acList.appendChild(btn);
+    });
+    acList.classList.add("open");
+  }
+
+  input.addEventListener("input", () => {
+    acIndex = -1;
+    renderAc(filterCompanies(input.value));
   });
 
+  input.addEventListener("keydown", (e) => {
+    const items = acList.querySelectorAll(".ac-item");
+    if (e.key === "ArrowDown" && items.length) {
+      e.preventDefault();
+      acIndex = Math.min(acIndex + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle("active", i === acIndex));
+    } else if (e.key === "ArrowUp" && items.length) {
+      e.preventDefault();
+      acIndex = Math.max(acIndex - 1, 0);
+      items.forEach((el, i) => el.classList.toggle("active", i === acIndex));
+    } else if (e.key === "Enter" && acIndex >= 0 && items[acIndex]) {
+      e.preventDefault();
+      input.value = items[acIndex].textContent;
+      acList.classList.remove("open");
+      form.requestSubmit();
+    } else if (e.key === "Escape") {
+      acList.classList.remove("open");
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".input-wrap")) acList.classList.remove("open");
+  });
+
+  // ---- 回答送信 ----
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     if (state.done) return;
-    const guess = input.value.trim();
-    if (!guess) return;
-    if (state.guesses.some((g) => normalize(g) === normalize(guess))) {
-      input.value = "";
+    const raw = input.value.trim();
+    if (!raw) return;
+
+    const canonical = resolveCompany(raw);
+    if (!canonical) {
+      shakeInput();
+      showToast("リストにない企業名です");
       return;
     }
 
-    state.guesses.push(guess);
-    if (isCorrect(guess)) {
+    if (state.guesses.some((g) => resolveCompany(g) === canonical)) {
+      shakeInput();
+      showToast("もう回答済みです");
+      input.value = "";
+      acList.classList.remove("open");
+      return;
+    }
+
+    state.guesses.push(raw);
+    acList.classList.remove("open");
+
+    if (isCorrect(raw)) {
       state.done = true;
       state.won = true;
       recordResult(true);
@@ -318,10 +483,11 @@
       state.won = false;
       recordResult(false);
     }
+
     saveState();
     input.value = "";
     render();
-    if (state.done) setTimeout(showResult, 500);
+    if (state.done) setTimeout(showResult, 600);
   });
 
   document.getElementById("btn-share").addEventListener("click", async () => {
@@ -353,6 +519,12 @@
     document.getElementById("btn-submit").disabled = disabled;
     const remaining = MAX_GUESSES - state.guesses.length;
     input.placeholder = disabled ? "本日は終了。明日また！" : `企業名を入力（残り${remaining}回）`;
+  }
+
+  // ---- 初回ヘルプ ----
+  if (!localStorage.getItem(HELP_KEY)) {
+    localStorage.setItem(HELP_KEY, "1");
+    setTimeout(() => openModal("modal-help"), 400);
   }
 
   drawChart(series, getVisibleChartMarkers());
