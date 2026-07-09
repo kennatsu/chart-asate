@@ -6,7 +6,7 @@ import { STOCKS } from "./stocks-catalog.mjs";
 import { findKeyMoves } from "./analyze-chart.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const seriesSrc = readFileSync(join(root, "chart-guess/series.js"), "utf8");
+const seriesSrc = readFileSync(join(root, "series.js"), "utf8");
 const { SERIES, MONTH_LABELS } = new Function(seriesSrc + "; return { SERIES, MONTH_LABELS };")();
 
 const data = STOCKS.map((s) => ({

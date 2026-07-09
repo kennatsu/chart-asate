@@ -1,4 +1,4 @@
-// 日本株の月足終値をYahoo Financeから取得し、chart-guess/series.js を生成する。
+// 日本株の月足終値をYahoo Financeから取得し、series.js を生成する。
 // 使い方: node scripts/fetch-data.mjs
 // 銘柄リストは scripts/stocks-catalog.mjs から自動取得。
 
@@ -83,6 +83,6 @@ ${lines}
 };
 `;
 
-const dest = join(dirname(fileURLToPath(import.meta.url)), "..", "chart-guess", "series.js");
+const dest = join(dirname(fileURLToPath(import.meta.url)), "..", "series.js");
 writeFileSync(dest, out);
 console.log(`\nwrote ${dest} (asof ${asof}, ${TICKERS.length} tickers)`);

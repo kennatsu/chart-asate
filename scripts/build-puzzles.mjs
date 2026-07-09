@@ -87,6 +87,6 @@ ${puzzles}
 ];
 `;
 
-const dest = join(dirname(fileURLToPath(import.meta.url)), "..", "chart-guess", "puzzles.js");
+const dest = join(dirname(fileURLToPath(import.meta.url)), "..", "puzzles.js");
 writeFileSync(dest, out);
 console.log(`wrote ${dest} (${STOCKS.length} puzzles, STOCK_INDEX for guess feedback)`);

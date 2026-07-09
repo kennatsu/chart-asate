@@ -1,41 +1,32 @@
-# daily-games
+# チャート当て（chart-asate）
 
-日次ブラウザゲームのスイート。小さく出荷して、計測しながら育てる。
+毎日1問、日本株チャートから企業名を当てるデイリークイズ。
 
-## ゲーム一覧
+**公開URL:** https://kennatsu.github.io/chart-asate/
 
-| # | ゲーム | 状態 |
-|---|--------|------|
-| 1 | [チャート当て](https://kennatsu.github.io/daily-games/chart-guess/) | 公開中 |
-| 2 | AIチャレンジ（説得/攻略デイリー） | 構想中 |
-| 3 | AIエージェント学習アプリ | 構想中 |
+> 将来的に独自ドメイン（例: `chart-asate.app`）を設定予定。GitHub Pages の Custom domain で切り替え可能。
 
 ## 方針
 
-- 毎日1問のデイリー形式・結果シェア導線を標準装備
-- まず静的ホスティングで出荷し、必要になってからバックエンドを足す
+- 毎日1問（JST 0:00）・6回チャンス・結果シェア
+- 静的ホスティング（GitHub Pages）のみで運用
 
 ## データ更新
 
-チャート当ての株価データは Yahoo Finance から取得する。銘柄マスタは `scripts/stocks-catalog.mjs`、問題生成は `scripts/build-puzzles.mjs`、データ取得は `scripts/fetch-data.mjs`。
+株価データは Yahoo Finance から取得。銘柄マスタは `scripts/stocks-catalog.mjs`。
 
 ```bash
-# 銘柄を追加した場合
-node scripts/build-puzzles.mjs
-node scripts/fetch-data.mjs
-
-# データだけ更新する場合
-node scripts/fetch-data.mjs
+node scripts/fetch-data.mjs          # series.js 更新
+node scripts/build-smart-hints.mjs   # ヒント再生成
+node scripts/build-puzzles.mjs       # puzzles.js 更新
 ```
 
-毎月2日 03:00 JST に GitHub Actions が自動更新する（`.github/workflows/update-stock-data.yml`）。
+毎月2日 03:00 JST に GitHub Actions が自動更新（`.github/workflows/update-stock-data.yml`）。
 
 ### ヒントの再生成（Fable 5 推奨）
 
-1. `node scripts/export-for-hints.mjs` — チャート変動ポイントを抽出
-2. `node scripts/generate-fable-prompt.mjs 1` — バッチ1用プロンプト（1〜4）
-3. Fable 5 に `scripts/fable-prompt-batch-N.txt` を貼り付け → `hints-batch-N.json` として保存
-4. `node scripts/merge-fable-hints.mjs` — マージ
-5. `node scripts/build-puzzles.mjs` — puzzles.js 更新
-
-手動（Fable なし）の場合は `node scripts/build-smart-hints.mjs` で driver + マクロ文脈ベースの解説を生成。
+1. `node scripts/export-for-hints.mjs`
+2. `node scripts/generate-fable-prompt.mjs 1`（バッチ1〜4）
+3. Fable 5 → `scripts/hints-batch-N.json`
+4. `node scripts/merge-fable-hints.mjs`
+5. `node scripts/build-puzzles.mjs`

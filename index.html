@@ -3,75 +3,129 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>daily-games — 毎日遊べるミニゲーム集</title>
-<meta name="description" content="毎日1問のデイリーブラウザゲーム集。チャート当てなど、サクッと遊べるクイズを公開中。" />
-<link rel="canonical" href="https://kennatsu.github.io/daily-games/" />
+<title>チャート当て — 毎日1問、日本株チャートクイズ</title>
+<meta name="description" content="実際の株価チャートの形だけで、どの日本企業か当てるデイリークイズ。毎日0時（JST）に新しい1問。" />
+<link rel="canonical" href="https://kennatsu.github.io/chart-asate/" />
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="ja_JP" />
-<meta property="og:site_name" content="daily-games" />
-<meta property="og:title" content="daily-games — 毎日遊べるミニゲーム集" />
-<meta property="og:description" content="毎日1問のデイリーブラウザゲーム集。日本株チャートクイズ「チャート当て」公開中。" />
-<meta property="og:url" content="https://kennatsu.github.io/daily-games/" />
-<meta property="og:image" content="https://kennatsu.github.io/daily-games/og-image.png" />
+<meta property="og:site_name" content="チャート当て" />
+<meta property="og:title" content="チャート当て — 毎日1問、日本株チャートクイズ" />
+<meta property="og:description" content="実際の株価チャートの形だけで、どの日本企業か当てるデイリークイズ。毎日0時（JST）に新しい1問。" />
+<meta property="og:url" content="https://kennatsu.github.io/chart-asate/" />
+<meta property="og:image" content="https://kennatsu.github.io/chart-asate/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="daily-games — 毎日遊べるミニゲーム集" />
+<meta property="og:image:alt" content="チャート当て — このチャート、どの企業？" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="daily-games — 毎日遊べるミニゲーム集" />
-<meta name="twitter:description" content="毎日1問のデイリーブラウザゲーム集。チャート当て公開中。" />
-<meta name="twitter:image" content="https://kennatsu.github.io/daily-games/og-image.png" />
-<meta name="twitter:image:alt" content="daily-games — 毎日遊べるミニゲーム集" />
+<meta name="twitter:title" content="チャート当て — 毎日1問、日本株チャートクイズ" />
+<meta name="twitter:description" content="実際の株価チャートの形だけで、どの日本企業か当てるデイリークイズ。" />
+<meta name="twitter:image" content="https://kennatsu.github.io/chart-asate/og-image.png" />
+<meta name="twitter:image:alt" content="チャート当て — このチャート、どの企業？" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;900&display=swap" rel="stylesheet" />
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: "M PLUS Rounded 1c", "Hiragino Sans", "Yu Gothic", sans-serif;
-    background: #f7f4ed;
-    color: #1a1a1b;
-    display: flex;
-    min-height: 100vh;
-    align-items: center;
-    justify-content: center;
-  }
-  .wrap { max-width: 440px; width: 100%; padding: 32px 20px; }
-  h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 6px; }
-  h1 .accent { color: #538d4e; }
-  .sub { color: #787c7e; margin-bottom: 28px; font-size: 0.9rem; font-weight: 700; }
-  a.game {
-    display: block;
-    background: #fff;
-    border: 2px solid #d3d6da;
-    border-radius: 12px;
-    padding: 20px;
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.15s;
-  }
-  a.game:hover { border-color: #6aaa64; }
-  .game h2 { font-size: 1.15rem; font-weight: 900; margin-bottom: 8px; }
-  .badge {
-    color: #538d4e;
-    background: #e8f3e7;
-    border-radius: 6px;
-    font-size: 0.68rem;
-    font-weight: 800;
-    padding: 0.15em 0.5em;
-    margin-left: 0.4em;
-    vertical-align: middle;
-  }
-  .game p { color: #787c7e; font-size: 0.85rem; line-height: 1.65; font-weight: 500; }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="wrap">
-  <h1>daily-<span class="accent">games</span></h1>
-  <p class="sub">毎日1問、サクッと遊べるブラウザゲーム集</p>
-  <a class="game" href="./chart-guess/">
-    <h2>チャート当て<span class="badge">公開中</span></h2>
-    <p>実際の株価チャートの形だけで、どの日本企業か当てるデイリークイズ。チャンスは6回。</p>
-  </a>
+<header class="header">
+  <div class="header-inner">
+    <button class="icon-btn" id="btn-help" aria-label="遊び方">?</button>
+    <h1 class="logo">チャート<span class="logo-accent">当て</span></h1>
+    <button class="icon-btn" id="btn-stats" aria-label="成績">📊</button>
+  </div>
+</header>
+
+<main class="main">
+  <div class="daily-bar">
+    <span class="puzzle-no" id="puzzle-label"></span>
+    <span class="countdown" id="countdown"></span>
+  </div>
+  <p class="tagline">このチャート、どの企業？</p>
+
+  <section class="chart-card">
+    <div class="chart-meta">
+      <span class="chart-badge" id="chart-change"></span>
+      <span class="chart-period">過去24ヶ月・月足</span>
+    </div>
+    <svg id="chart" viewBox="0 0 640 380" role="img" aria-label="株価チャート"></svg>
+    <div class="chart-story" id="chart-story" aria-label="チャート解説"></div>
+  </section>
+
+  <section class="guess-area">
+    <form id="guess-form" autocomplete="off">
+      <div class="input-wrap">
+        <input
+          type="text"
+          id="guess-input"
+          placeholder="企業名を入力"
+          aria-label="企業名を入力"
+          aria-autocomplete="list"
+          aria-controls="ac-list"
+        />
+        <ul class="ac-list" id="ac-list" role="listbox"></ul>
+      </div>
+      <button type="submit" class="btn-primary" id="btn-submit">回答</button>
+    </form>
+  </section>
+
+  <section class="guess-grid" id="guess-grid" aria-label="回答履歴"></section>
+
+  <section class="hints" id="hints"></section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- 結果モーダル -->
+<div class="modal-backdrop hidden" id="modal-result">
+  <div class="modal">
+    <button class="modal-close" data-close aria-label="閉じる">&times;</button>
+    <h2 id="result-title"></h2>
+    <p class="result-answer">正解: <strong id="result-answer"></strong> <span class="result-change" id="result-change"></span></p>
+    <p class="result-desc" id="result-desc"></p>
+    <div class="share-preview" id="share-preview"></div>
+    <button class="btn-primary btn-share" id="btn-share">結果をコピーしてシェア</button>
+    <p class="copy-note hidden" id="copy-note">コピーしました！</p>
+    <p class="next-note">次の問題は <strong>0:00 JST</strong> に更新</p>
+  </div>
 </div>
+
+<!-- 遊び方モーダル -->
+<div class="modal-backdrop hidden" id="modal-help">
+  <div class="modal">
+    <button class="modal-close" data-close aria-label="閉じる">&times;</button>
+    <h2>遊び方</h2>
+    <ul class="help-list">
+      <li>株価チャートの<strong>形だけ</strong>を見て、どの日本企業か当てよう。</li>
+      <li>チャンスは<strong>6回</strong>。外すたびにヒントが1つ開く。</li>
+      <li>外したら <strong>業界・規模・株価の近さ</strong> がヒントになる（Tradle風）。</li>
+      <li>ヒントは 業界 → 稼ぎ方 → 強み → <strong>チャート解説×2</strong> → 関連ワード の順。</li>
+      <li>証券コードは出ない。ビジネスの理解が近道！</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 成績モーダル -->
+<div class="modal-backdrop hidden" id="modal-stats">
+  <div class="modal">
+    <button class="modal-close" data-close aria-label="閉じる">&times;</button>
+    <h2>あなたの成績</h2>
+    <div class="stats-grid">
+      <div class="stat"><span class="stat-num" id="stat-played">0</span><span class="stat-label">プレイ</span></div>
+      <div class="stat"><span class="stat-num" id="stat-winrate">0%</span><span class="stat-label">正解率</span></div>
+      <div class="stat"><span class="stat-num" id="stat-streak">0</span><span class="stat-label">連続</span></div>
+      <div class="stat"><span class="stat-num" id="stat-maxstreak">0</span><span class="stat-label">最長</span></div>
+    </div>
+    <h3 class="dist-title">推測回数の分布</h3>
+    <div class="dist-chart" id="stat-distribution"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>実際の株価データ（<span id="data-asof"></span>時点）・投資助言ではありません</p>
+</footer>
+
+<script src="series.js"></script>
+<script src="puzzles.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
