@@ -34,12 +34,12 @@ function buildHints(s) {
   }
 
   return [
-    { tag: "業界", text: s.sector },
-    { tag: "稼ぎ方", text: h.earn },
-    { tag: "強み", text: h.moat },
+    { tag: "関連ワード", text: h.clue },
     chartHints[0],
     chartHints[1],
-    { tag: "関連ワード", text: h.clue },
+    { tag: "稼ぎ方", text: h.earn },
+    { tag: "強み", text: h.moat },
+    { tag: "業界", text: s.sector },
   ];
 }
 

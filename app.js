@@ -3,6 +3,8 @@
   const STORAGE_KEY = "chart-guess-state";
   const STATS_KEY = "chart-guess-stats";
   const HELP_KEY = "chart-guess-seen-help";
+  const GUIDE_KEY = "chart-asate-guide-dismiss";
+  const CHANGE_REVEAL_AFTER = 3;
   const EPOCH = "2026-07-01";
   const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -48,9 +50,49 @@
   document.getElementById("puzzle-label").textContent = `#${puzzleNo}`;
   document.getElementById("data-asof").textContent = DATA_ASOF;
 
-  const changeBadge = document.getElementById("chart-change");
-  changeBadge.textContent = changeText;
-  changeBadge.classList.add(targetChangePct >= 0 ? "up" : "down");
+  function getRevealCount() {
+    return state.done ? puzzle.hints.length : state.guesses.length;
+  }
+
+  function chartTrendLabel() {
+    if (targetChangePct > 8) return "全体は↗上昇トレンド";
+    if (targetChangePct < -8) return "全体は↘下落トレンド";
+    return "全体は→おおむね横ばい";
+  }
+
+  function updateChartMeta() {
+    const trendEl = document.getElementById("chart-trend");
+    trendEl.textContent = chartTrendLabel();
+
+    const guideTrend = document.getElementById("guide-trend");
+    if (guideTrend) guideTrend.textContent = chartTrendLabel();
+
+    const badge = document.getElementById("chart-change");
+    const revealed = getRevealCount() >= CHANGE_REVEAL_AFTER || state.done;
+    if (revealed) {
+      badge.textContent = changeText;
+      badge.classList.remove("locked", "hidden");
+      badge.classList.add(targetChangePct >= 0 ? "up" : "down");
+      badge.removeAttribute("title");
+    } else {
+      badge.textContent = `🔒 あと${CHANGE_REVEAL_AFTER - getRevealCount()}ヒント`;
+      badge.classList.add("locked");
+      badge.classList.remove("up", "down", "hidden");
+      badge.title = `${CHANGE_REVEAL_AFTER}つヒントが開くと総騰落率が表示されます`;
+    }
+  }
+
+  function renderReasoningGuide() {
+    const el = document.getElementById("reasoning-guide");
+    if (!el) return;
+    const hide = localStorage.getItem(GUIDE_KEY) === "1" || state.guesses.length > 0 || state.done;
+    el.classList.toggle("hidden", hide);
+  }
+
+  document.getElementById("btn-dismiss-guide")?.addEventListener("click", () => {
+    localStorage.setItem(GUIDE_KEY, "1");
+    renderReasoningGuide();
+  });
 
   const countdownEl = document.getElementById("countdown");
   function tickCountdown() {
@@ -108,18 +150,30 @@
     proximity = Math.min(100, proximity);
 
     let sectorFb;
-    if (guess.sector === targetMeta.sector) sectorFb = { cls: "match", text: "業界 ○" };
-    else if (guess.sectorRoot === targetMeta.sectorRoot) sectorFb = { cls: "partial", text: "業界 △" };
-    else sectorFb = { cls: "miss", text: "業界 ✗" };
+    if (guess.sector === targetMeta.sector) {
+      sectorFb = { cls: "match", text: "業界が一致" };
+    } else if (guess.sectorRoot === targetMeta.sectorRoot) {
+      sectorFb = { cls: "partial", text: "業界は近い" };
+    } else {
+      sectorFb = { cls: "miss", text: "別の業界" };
+    }
 
     let sizeFb;
-    if (mcapRatio >= 0.55) sizeFb = { cls: "match", text: "規模 ≈" };
-    else if (guess.mcapYen > targetMeta.mcapYen * 1.4) sizeFb = { cls: "miss", text: "規模 ↓小" };
-    else sizeFb = { cls: "miss", text: "規模 ↑大" };
+    if (mcapRatio >= 0.55) {
+      sizeFb = { cls: "match", text: "規模が近い" };
+    } else if (guess.mcapYen > targetMeta.mcapYen * 1.4) {
+      sizeFb = { cls: "miss", text: "正解はもっと小さい" };
+    } else {
+      sizeFb = { cls: "miss", text: "正解はもっと大きい" };
+    }
 
     const chartCls = sameDir ? (changeDiff <= 25 ? "match" : "partial") : "miss";
-    const chartIcon = sameDir ? "↗" : "↘";
-    const chartFb = { cls: chartCls, text: `株価 ${chartIcon}${proximity}%` };
+    const chartFb = {
+      cls: chartCls,
+      text: sameDir
+        ? `株の動き ${proximity}%似てる`
+        : `株の動きは逆方向`,
+    };
 
     return { proximity, pills: [sectorFb, sizeFb, chartFb] };
   }
@@ -381,6 +435,7 @@
       : -1;
     renderChartStory(newNoteIdx >= 0 ? newNoteIdx : -1);
     drawChart(series, markers, { newMarkerIdx: newMarkerIdx >= 0 ? newMarkerIdx : undefined });
+    updateChartMeta();
 
     if (!REDUCE_MOTION) await sleep(450);
   }
@@ -406,6 +461,9 @@
     change.textContent = `（${changeText}）`;
     change.className = "result-change " + (targetChangePct >= 0 ? "up" : "down");
     document.getElementById("result-desc").textContent = puzzle.desc;
+    const dir = targetChangePct >= 0 ? "上昇" : "下落";
+    document.getElementById("result-learn").textContent =
+      `振り返り：2年で${changeText}の${dir}。${state.won ? "ヒントと組み合わせて推理できましたね。" : "明日はヒントを順に使ってみてください。"}`;
     document.getElementById("share-preview").textContent = buildShareText();
     openModal("modal-result");
   }
@@ -607,6 +665,8 @@
     renderHints(-1);
     renderChartStory(-1);
     drawChart(series, getVisibleChartMarkers());
+    updateChartMeta();
+    renderReasoningGuide();
     const disabled = state.done || animating;
     input.disabled = disabled;
     document.getElementById("btn-submit").disabled = disabled;

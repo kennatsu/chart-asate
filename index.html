@@ -41,10 +41,23 @@
     <span class="countdown" id="countdown"></span>
   </div>
   <p class="tagline">このチャート、どの企業？</p>
+  <p class="tagline-sub">株の知識がなくてもOK。まずは「形」から考えよう。</p>
+
+  <section class="reasoning-guide" id="reasoning-guide">
+    <h2 class="guide-title">初めての方へ — ここから始める</h2>
+    <ol class="guide-steps">
+      <li><strong>形</strong>：<span id="guide-trend">全体の方向</span>をチェック（右が高い？低い？）</li>
+      <li><strong>当てる</strong>：知ってる企業名を入力。外れてもOK</li>
+      <li><strong>絞る</strong>：外すと「業界・規模・動きの似方」が教えてくれる</li>
+      <li><strong>深掘り</strong>：ヒントで「なぜ動いた？」が分かる（チャートの核心）</li>
+    </ol>
+    <button type="button" class="guide-dismiss" id="btn-dismiss-guide">わかった</button>
+  </section>
 
   <section class="chart-card">
     <div class="chart-meta">
-      <span class="chart-badge" id="chart-change"></span>
+      <span class="chart-trend" id="chart-trend"></span>
+      <span class="chart-badge locked" id="chart-change" title="ヒントが3つ開くと表示"></span>
       <span class="chart-period">過去24ヶ月・月足</span>
     </div>
     <svg id="chart" viewBox="0 0 640 380" role="img" aria-label="株価チャート"></svg>
@@ -81,6 +94,7 @@
     <button class="modal-close" data-close aria-label="閉じる">&times;</button>
     <h2 id="result-title"></h2>
     <p class="result-answer">正解: <strong id="result-answer"></strong> <span class="result-change" id="result-change"></span></p>
+    <p class="result-learn" id="result-learn"></p>
     <p class="result-desc" id="result-desc"></p>
     <div class="share-preview" id="share-preview"></div>
     <button class="btn-primary btn-share" id="btn-share">結果をコピーしてシェア</button>
@@ -94,12 +108,14 @@
   <div class="modal">
     <button class="modal-close" data-close aria-label="閉じる">&times;</button>
     <h2>遊び方</h2>
+    <p class="help-intro">株価のプロでなくて大丈夫。日常の知識とヒントで当てられます。</p>
     <ul class="help-list">
-      <li>株価チャートの<strong>形だけ</strong>を見て、どの日本企業か当てよう。</li>
-      <li>チャンスは<strong>6回</strong>。外すたびにヒントが1つ開く。</li>
-      <li>外したら <strong>業界・規模・株価の近さ</strong> がヒントになる（Tradle風）。</li>
-      <li>ヒントは 業界 → 稼ぎ方 → 強み → <strong>チャート解説×2</strong> → 関連ワード の順。</li>
-      <li>証券コードは出ない。ビジネスの理解が近道！</li>
+      <li>まずチャートの<strong>形</strong>（上がった？下がった？）を見る。</li>
+      <li>知ってる企業名を入力。チャンスは<strong>6回</strong>。</li>
+      <li>外すと <strong>業界・規模・株の動き</strong> の近さが表示される（絞り込み用）。</li>
+      <li>ヒントは <strong>関連ワード → チャート解説×2 → 稼ぎ方 → 強み → 業界</strong> の順（易→難）。</li>
+      <li>総騰落率（+○%）は<strong>3つヒントが開いてから</strong>表示。最初は形だけ見る。</li>
+      <li>証券コードは出ない。製品やサービスから想像するのがコツ。</li>
     </ul>
   </div>
 </div>
